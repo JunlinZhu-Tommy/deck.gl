@@ -50,6 +50,11 @@ export function count(container) {
     return container.length;
   }
 
+  // loaders.gl standard format
+  if (container.header && Number.isFinite(container.header.vertexCount)) {
+    return container.header.vertexCount;
+  }
+
   // Note that getting the count of an object is O(N)
   if (isPlainObject(container)) {
     return Object.keys(container).length;

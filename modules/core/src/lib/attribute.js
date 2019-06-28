@@ -64,6 +64,7 @@ export default class Attribute extends BaseAttribute {
       transition,
       noAlloc,
       update: update || (accessor && this._standardAccessor),
+      aliases: this._getAliases(accessor),
       accessor,
       defaultValue,
       bufferLayout
@@ -287,36 +288,40 @@ export default class Attribute extends BaseAttribute {
 
   // Use external buffer
   // Returns true if successful
-  setExternalBuffer(buffer, numInstances) {
+  setExternalBuffer(buffer) {
     const state = this.userData;
 
     if (buffer) {
       state.isExternalBuffer = true;
       this.clearNeedsUpdate();
 
+      if (ArrayBuffer.isView(buffer)) {
+        buffer = {value: buffer};
+      }
+
       if (buffer instanceof Buffer) {
         if (this.externalBuffer !== buffer) {
           this.update({constant: false, buffer});
           state.needsRedraw = true;
         }
-      } else if (this.value !== buffer) {
-        if (!ArrayBuffer.isView(buffer)) {
+      } else if (this.value !== buffer.value) {
+        const attribute = buffer;
+        if (!ArrayBuffer.isView(attribute.value)) {
           throw new Error('Attribute prop must be typed array');
-        }
-        if (state.auto && buffer.length <= numInstances * this.size) {
-          throw new Error('Attribute prop array must match length and size');
         }
 
         const ArrayType = glArrayFromType(this.type || GL.FLOAT);
-        if (buffer instanceof ArrayType) {
-          this.update({constant: false, value: buffer});
+        if (!(attribute.value instanceof ArrayType)) {
+          this.update(Object.assign({constant: false}, attribute));
         } else {
           log.warn(`Attribute prop ${this.id} is casted to ${ArrayType.name}`)();
           // Cast to proper type
-          this.update({constant: false, value: new ArrayType(buffer)});
+          this.update(
+            Object.assign({constant: false}, attribute, {value: new ArrayType(attribute.value)})
+          );
         }
         // Save original typed array
-        this.value = buffer;
+        this.value = attribute.value;
         state.needsRedraw = true;
       }
       this._updateShaderAttributes();
@@ -325,6 +330,25 @@ export default class Attribute extends BaseAttribute {
 
     state.isExternalBuffer = false;
     return false;
+  }
+
+  hasAlias(name) {
+    name = name.toLowerCase();
+    for (const alias of this.userData.aliases) {
+      if (name.startsWith(alias)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _getAliases(accessor) {
+    const aliases = [];
+    aliases.push(this.id.replace('instance', '').toLowerCase());
+    if (typeof accessor === 'string') {
+      aliases.push(accessor.replace('get', '').toLowerCase());
+    }
+    return aliases;
   }
 
   // PRIVATE HELPER METHODS

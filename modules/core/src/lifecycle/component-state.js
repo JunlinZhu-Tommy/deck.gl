@@ -172,7 +172,13 @@ export default class ComponentState {
     asyncProp.pendingLoadCount++;
     const loadCount = asyncProp.pendingLoadCount;
     promise
-      .then(data => this._setAsyncPropValue(propName, data, loadCount))
+      .then(data => {
+        this._setAsyncPropValue(propName, data, loadCount);
+        const {onDataLoad} = this.layer.props;
+        if (onDataLoad) {
+          onDataLoad(data, {propName, layer: this.layer});
+        }
+      })
       .catch(error => log.error(error)());
   }
 

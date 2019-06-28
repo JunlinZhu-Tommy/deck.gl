@@ -50,6 +50,7 @@ const defaultProps = {
   dataComparator: null,
   _dataDiff: null,
   dataTransform: {type: 'function', value: data => data, compare: false},
+  onDataLoad: {type: 'function', value: null, compare: false, optional: true},
   fetch: {
     type: 'function',
     value: (url, {layer}) => load(url, layer.getLoadOptions()),

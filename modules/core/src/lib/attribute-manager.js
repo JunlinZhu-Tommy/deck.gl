@@ -224,6 +224,8 @@ export default class AttributeManager {
     // keep track of whether some attributes are updated
     let updated = false;
 
+    const externalAttributes = this._updateExternalAttributes(data);
+
     logFunctions.onUpdateStart({level: LOG_START_END_PRIORITY, id: this.id, numInstances});
     if (this.stats) {
       this.stats.get('Update Attributes').timeStart();
@@ -232,7 +234,9 @@ export default class AttributeManager {
     for (const attributeName in this.attributes) {
       const attribute = this.attributes[attributeName];
 
-      if (attribute.setExternalBuffer(buffers[attributeName], this.numInstances)) {
+      if (
+        attribute.setExternalBuffer(buffers[attributeName] || externalAttributes[attributeName])
+      ) {
         // Attribute is using external buffer from the props
       } else if (attribute.setGenericValue(props[attribute.getAccessor()])) {
         // Attribute is using generic value from the props
@@ -314,6 +318,35 @@ export default class AttributeManager {
   }
 
   // PRIVATE METHODS
+
+  // Normalize external attributes in data
+  _updateExternalAttributes(data) {
+    const {userData} = this;
+    const attributes = (data && data.attributes) || null;
+
+    if (userData.externalAttributes === attributes) {
+      return userData.normalizedExternalAttributes;
+    }
+    const normalizedAttributes = {};
+
+    for (const name in attributes || {}) {
+      const externalAttribute = attributes[name];
+      if (name in this.attributes) {
+        normalizedAttributes[name] = externalAttribute;
+        break;
+      }
+      for (const attributeName in this.attributes) {
+        if (this.attributes[attributeName].hasAlias(name)) {
+          normalizedAttributes[attributeName] = externalAttribute;
+          break;
+        }
+      }
+    }
+
+    userData.externalAttributes = attributes;
+    userData.normalizedExternalAttributes = normalizedAttributes;
+    return normalizedAttributes;
+  }
 
   // Used to register an attribute
   _add(attributes, updaters, extraProps = {}) {
