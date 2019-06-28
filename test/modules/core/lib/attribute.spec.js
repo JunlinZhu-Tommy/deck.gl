@@ -419,7 +419,12 @@ test('Attribute#hasAlias', t => {
   t.ok(attribute.hasAlias('POSITION'), 'hasAlias returns correct result');
   t.notOk(attribute.hasAlias('COLOR_0'), 'hasAlias returns correct result');
 
-  attribute = new Attribute(gl, {id: 'instanceValid', size: 1, type: GL.UNSIGNED_BYTE, accessor: ['getPolygon', 'getIsValid']});
+  attribute = new Attribute(gl, {
+    id: 'instanceValid',
+    size: 1,
+    type: GL.UNSIGNED_BYTE,
+    accessor: ['getPolygon', 'getIsValid']
+  });
   t.ok(attribute.hasAlias('valid'), 'hasAlias returns correct result');
   t.notOk(attribute.hasAlias('isValid'), 'hasAlias returns correct result');
 
