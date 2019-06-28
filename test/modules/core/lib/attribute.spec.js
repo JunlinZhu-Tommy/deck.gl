@@ -415,6 +415,18 @@ test('Attribute#updateBuffer - partial', t => {
   t.end();
 });
 
+test('Attribute#hasAlias', t => {
+  let attribute = new Attribute(gl, {id: 'instancePositions', size: 3, accessor: 'getPosition'});
+  t.ok(attribute.hasAlias('POSITION'), 'hasAlias returns correct result');
+  t.notOk(attribute.hasAlias('COLOR_0'), 'hasAlias returns correct result');
+
+  attribute = new Attribute(gl, {id: 'instanceValid', size: 1, type: GL.UNSIGNED_BYTE, accessor: ['getPolygon', 'getIsValid']});
+  t.ok(attribute.hasAlias('valid'), 'hasAlias returns correct result');
+  t.notOk(attribute.hasAlias('isValid'), 'hasAlias returns correct result');
+
+  t.end();
+});
+
 // t.ok(attribute.allocate(attributeName, allocCount), 'Attribute.allocate function available');
 // t.ok(attribute._setExternalBuffer(attributeName, buffer, numInstances), 'Attribute._setExternalBuffer function available');
 // t.ok(attribute._analyzeBuffer(attributeName, numInstances), 'Attribute._analyzeBuffer function available');
