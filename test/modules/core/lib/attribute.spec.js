@@ -24,6 +24,7 @@ import GL from '@luma.gl/constants';
 import {Buffer} from '@luma.gl/core';
 import test from 'tape-catch';
 import {gl} from '@deck.gl/test-utils';
+import {makeSpy} from '@probe.gl/test-utils';
 
 test('Attribute#imports', t => {
   t.equals(typeof Attribute, 'function', 'Attribute import successful');
@@ -35,9 +36,7 @@ test('Attribute#constructor', t => {
 
   t.ok(attribute, 'Attribute construction successful');
   t.is(typeof attribute.getBuffer, 'function', 'Attribute.getBuffer function available');
-  t.ok(attribute.allocate, 'Attribute.allocate function available');
-  t.ok(attribute.update, 'Attribute._updateBuffer function available');
-  t.ok(attribute.setExternalBuffer, 'Attribute._setExternalBuffer function available');
+  t.is(typeof attribute.getValue, 'function', 'Attribute.getBuffer function available');
   t.end();
 });
 
@@ -427,10 +426,70 @@ test('Attribute#hasAlias', t => {
   t.end();
 });
 
-// t.ok(attribute.allocate(attributeName, allocCount), 'Attribute.allocate function available');
-// t.ok(attribute._setExternalBuffer(attributeName, buffer, numInstances), 'Attribute._setExternalBuffer function available');
+test('Attribute#setExternalBuffer', t => {
+  const attribute = new Attribute(gl, {
+    id: 'values-1',
+    type: GL.FLOAT,
+    size: 2,
+    accessor: 'getValue'
+  });
+  const spy = makeSpy(attribute, 'update');
+
+  const value1 = new Float32Array([0, 1, 2, 3]);
+  const value2 = new Float64Array(4).fill(Math.PI);
+  const value3 = new Float32Array([0, 0]);
+  const value4 = [0, 1, 2, 3];
+  const buffer = new Buffer(gl, {data: value1});
+
+  let usingExternalBuffer = attribute.setExternalBuffer(buffer);
+  t.ok(usingExternalBuffer, 'Using external Buffer instance');
+  t.is(attribute.getBuffer(), buffer, 'Set external Buffer instance');
+  t.is(spy.callCount, 1, 'update called');
+
+  usingExternalBuffer = attribute.setExternalBuffer(buffer);
+  t.ok(usingExternalBuffer, 'Using external Buffer instance');
+  t.is(spy.callCount, 1, 'update not called if buffer is not changed');
+
+  usingExternalBuffer = attribute.setExternalBuffer(null);
+  t.notOk(usingExternalBuffer, 'Not using external buffer');
+  t.not(attribute.getBuffer, buffer, 'Cleared previously set external buffer');
+  t.is(spy.callCount, 1, 'update not called');
+
+  usingExternalBuffer = attribute.setExternalBuffer(value1);
+  t.ok(usingExternalBuffer, 'Using external typed array');
+  t.is(attribute.value, value1, 'Set value to external typed array');
+  t.is(spy.callCount, 2, 'update called');
+
+  usingExternalBuffer = attribute.setExternalBuffer(value2);
+  t.ok(usingExternalBuffer, 'Using external typed array');
+  t.is(attribute.value, value2, 'Set value to external typed array');
+  t.is(spy.callCount, 3, 'update called');
+
+  usingExternalBuffer = attribute.setExternalBuffer(value2);
+  t.ok(usingExternalBuffer, 'Using external typed array');
+  t.is(spy.callCount, 3, 'update not called if buffer is not changed');
+
+  usingExternalBuffer = attribute.setExternalBuffer({constant: true, value: value3});
+  t.ok(usingExternalBuffer, 'Using external attribute definition');
+  t.is(attribute.value, value3, 'Set value to external constant');
+  t.is(spy.callCount, 4, 'update called');
+
+  usingExternalBuffer = attribute.setExternalBuffer({value: value1, offset: 4, stride: 4});
+  t.ok(usingExternalBuffer, 'Using external typed array');
+  t.notOk(attribute.constant, 'Constant flag is cleared');
+  t.is(attribute.offset, 4, 'offset is set');
+  t.is(attribute.stride, 4, 'stride is set');
+
+  t.throws(() => attribute.setExternalBuffer(value4), 'invalid buffer object');
+
+  // Clean up
+  spy.reset();
+  buffer.delete();
+  attribute.delete();
+
+  t.end();
+});
+
 // t.ok(attribute._analyzeBuffer(attributeName, numInstances), 'Attribute._analyzeBuffer function available');
-// t.ok(attribute._updateBuffer({attributeName, numInstances, data, props, context}), 'Attribute._updateBuffer function available');
-// t.ok(attribute._updateBufferViaStandardAccessor(data, props), 'Attribute._updateBufferViaStandardAccessor function available');
 // t.ok(attribute._validateAttributeDefinition(attributeName), 'Attribute._validateAttributeDefinition function available');
 // t.ok(attribute._checkAttributeArray(attributeName, 'Attribute._checkAttributeArray function available');

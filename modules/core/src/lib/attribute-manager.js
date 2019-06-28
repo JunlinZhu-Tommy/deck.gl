@@ -331,14 +331,13 @@ export default class AttributeManager {
 
     for (const name in attributes || {}) {
       const externalAttribute = attributes[name];
-      if (name in this.attributes) {
-        normalizedAttributes[name] = externalAttribute;
-        break;
-      }
       for (const attributeName in this.attributes) {
+        if (name === attributeName) {
+          normalizedAttributes[name] = externalAttribute;
+          break;
+        }
         if (this.attributes[attributeName].hasAlias(name)) {
           normalizedAttributes[attributeName] = externalAttribute;
-          break;
         }
       }
     }

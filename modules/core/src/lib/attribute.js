@@ -311,7 +311,7 @@ export default class Attribute extends BaseAttribute {
         }
 
         const ArrayType = glArrayFromType(this.type || GL.FLOAT);
-        if (!(attribute.value instanceof ArrayType)) {
+        if (attribute.value instanceof ArrayType) {
           this.update(Object.assign({constant: false}, attribute));
         } else {
           log.warn(`Attribute prop ${this.id} is casted to ${ArrayType.name}`)();

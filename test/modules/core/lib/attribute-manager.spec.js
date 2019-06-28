@@ -52,6 +52,7 @@ test('AttributeManager constructor', t => {
   const attributeManager = new AttributeManager(gl);
 
   t.ok(attributeManager, 'AttributeManager construction successful');
+  attributeManager.finalize();
   t.end();
 });
 
@@ -79,6 +80,7 @@ test('AttributeManager.add', t => {
     {positions: ['positions'], getPosition: ['positions']},
     'AttributeManager.add - build update triggers mapping'
   );
+  attributeManager.finalize();
   t.end();
 });
 
@@ -121,6 +123,7 @@ test('AttributeManager.update', t => {
   t.ok(ArrayBuffer.isView(attribute.value), 'attribute has typed array');
   t.equals(attribute.value[1], 1, 'Third update, attribute value was updated');
 
+  attributeManager.finalize();
   t.end();
 });
 
@@ -137,6 +140,7 @@ test('AttributeManager.update - 0 numInstances', t => {
   const attribute = attributeManager.getAttributes()['positions'];
   t.ok(ArrayBuffer.isView(attribute.value), 'attribute has typed array');
 
+  attributeManager.finalize();
   t.end();
 });
 
@@ -147,7 +151,7 @@ test('AttributeManager.update - external buffers', t => {
 
   attributeManager.add({
     positions: {size: 2, update: dummyUpdate},
-    colors: {size: 3, type: GL.UNSIGNED_BYTE, update: dummyUpdate}
+    colors: {size: 3, type: GL.UNSIGNED_BYTE, accessor: 'getObjectColor'}
   });
 
   // First update, should autoalloc and update the value array
@@ -174,6 +178,20 @@ test('AttributeManager.update - external buffers', t => {
 
   t.is(attribute.buffer.accessor.type, gl.UNSIGNED_BYTE, 'colors casted to correct type');
 
+  attributeManager.update({
+    numInstances: 1,
+    data: {
+      attributes: {
+        positions: new Float32Array([0, 0]),
+        objectColors: {constant: true, value: new Uint8ClampedArray([0, 0, 0])}
+      }
+    }
+  });
+
+  attribute = attributeManager.getAttributes()['colors'];
+  t.ok(attribute.constant, 'used external attribute descriptors');
+
+  attributeManager.finalize();
   t.end();
 });
 
@@ -195,6 +213,7 @@ test('AttributeManager.invalidate', t => {
     'invalidated attribute by accessor name'
   );
 
+  attributeManager.finalize();
   t.end();
 });
 
@@ -228,5 +247,6 @@ test('AttributeManager.setDefaultLogFunctions', t => {
   t.ok(updaterCalled.start, 'onUpdateStart called');
   t.ok(updaterCalled.update, 'onUpdate called');
   t.ok(updaterCalled.end, 'onUpdateEnd called');
+  attributeManager.finalize();
   t.end();
 });
